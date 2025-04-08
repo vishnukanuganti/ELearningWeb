@@ -1,0 +1,160 @@
+﻿@model Class
+
+<h2>@Model.Name</h2>
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success">@TempData["Message"]</div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<h3>Description</h3>
+<p>@Model.Description</p>
+
+<h3>Courses</h3>
+<ul class="list-group mb-3">
+    @foreach (var cc in Model.ClassCourses)
+    {
+        <li class="list-group-item">@cc.Course.Name</li>
+    }
+</ul>
+<a asp-action="AddCourse" asp-route-classId="@Model.Id" class="btn btn-primary mb-3">Add Course</a>
+
+<h3>Students</h3>
+<ul class="list-group mb-3">
+    @foreach (var cs in Model.ClassStudents)
+    {
+        <li class="list-group-item">@cs.Student.FullName (@cs.Student.Email)</li>
+    }
+</ul>
+<a asp-action="AddStudent" asp-route-classId="@Model.Id" class="btn btn-primary mb-3">Add Student</a>
+
+<h3>Quizzes</h3>
+<ul class="list-group mb-3">
+    @foreach (var quiz in Model.Quizzes)
+    {
+        <li class="list-group-item">
+            @quiz.Title
+            <ul class="list-group">
+                @foreach (var attempt in quiz.Attempts)
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>@attempt.Student.FullName: @attempt.Answers</span>
+                        @if (attempt.Grade.HasValue)
+                        {
+                            <span class="badge bg-success">Grade: @attempt.Grade%</span>
+                        }
+                        else
+                        {
+                            <a asp-action="GradeAttempt" asp-route-attemptId="@attempt.Id" class="btn btn-success btn-sm">Grade</a>
+                        }
+                    </li>
+                }
+            </ul>
+        </li>
+    }
+</ul>
+<a asp-action="CreateQuiz" asp-route-classId="@Model.Id" class="btn btn-primary mb-3">Create Quiz</a>
+
+<h3>Discussion Forum</h3>
+<div id="discussion-forum" class="mb-3">
+    <div id="posts-container" class="list-group mb-3">
+        <!-- Posts will be loaded here via AJAX -->
+    </div>
+
+    <form id="post-form" class="mb-3">
+        <input type="hidden" id="classId" value="@Model.Id" />
+        <div class="form-group">
+            <label for="postContent">Post a Message:</label>
+            <textarea id="postContent" class="form-control" rows="3" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary">Post</button>
+    </form>
+    <div id="post-message" class="d-none"></div>
+</div>
+
+<a asp-action="Index" class="btn btn-secondary">Back to Classes</a>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+                $(document).ready(function () {
+                    let lastPostTime = null;
+
+                    // Function to load posts
+                    function loadPosts() {
+                        $.ajax({
+                            url: '/Discussion/GetPosts',
+                            type: 'GET',
+                            data: { classId: $('#classId').val(), after: lastPostTime },
+                            success: function (response) {
+                                if (response.success) {
+                                    response.posts.forEach(function (post) {
+                                        $('#posts-container').append(
+                                            '<div class="list-group-item">' +
+                                            '<strong>' + post.userName + '</strong> (' + post.formattedPostedAt + '): ' +
+                                            post.content +
+                                            '</div>'
+                                        );
+                                        // Update lastPostTime to the latest post's timestamp
+                                        if (!lastPostTime || new Date(post.postedAt) > new Date(lastPostTime)) {
+                                            lastPostTime = post.postedAt;
+                                        }
+                                    });
+                                }
+                            },
+                            error: function () {
+                                $('#post-message').removeClass('d-none alert-success').addClass('alert-danger').text('Error loading posts.');
+                            }
+                        });
+                    }
+
+                    // Initial load of posts
+                    loadPosts();
+
+                    // Poll for new posts every 10 seconds
+                    setInterval(loadPosts, 10000);
+
+                    // Handle form submission
+                    $('#post-form').submit(function (e) {
+                        e.preventDefault();
+                        var content = $('#postContent').val();
+                        if (!content) return;
+
+                        $.ajax({
+                            url: '/Discussion/CreatePost',
+                            type: 'POST',
+                            data: {
+                                ClassId: $('#classId').val(),
+                                Content: content,
+                                __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                            },
+                            success: function (response) {
+                                if (response.success) {
+                                    $('#posts-container').append(
+                                        '<div class="list-group-item">' +
+        '' + response.post.userName + ' (' + response.post.formattedPostedAt + '): ' +
+        response.post.content +
+                                        '</div>'
+                                    );
+                                    $('#postContent').val('');
+                                    $('#post-message').removeClass('d-none alert-danger').addClass('alert-success').text('Post added successfully!');
+                                    // Update lastPostTime
+        lastPostTime = response.post.postedAt;
+                                } else {
+                                    $('#post-message').removeClass('d-none alert-success').addClass('alert-danger').text(response.message);
+                                }
+                            },
+                            error: function () {
+                                $('#post-message').removeClass('d-none alert-success').addClass('alert-danger').text('Error posting message.');
+                            }
+                        });
+                    });
+                });
+    </script>
+}

@@ -1,0 +1,26 @@
+﻿@model ELearningWeb.Models.ViewModel.AddCourseViewModel
+
+<h2>Add Course to Class</h2>
+
+<form asp-action="AddCourse" method="post">
+    <input type="hidden" asp-for="ClassId" />
+    <div class="form-group mb-3">
+        <label class="form-label">Select Course</label>
+        <select name="courseId" class="form-control">
+            @foreach (var course in Model.Courses)
+            {
+                <option value="@course.Id">@course.Name</option>
+            }
+        </select>
+        @if (!Model.Courses.Any())
+        {
+            <span class="text-danger">No courses available to add.</span>
+        }
+    </div>
+    <button type="submit" class="btn btn-primary" disabled="@(!Model.Courses.Any())">Add</button>
+    <a asp-action="ClassDetails" asp-route-id="@Model.ClassId" class="btn btn-secondary">Cancel</a>
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="text-danger mt-2">@Html.ValidationSummary()</div>
+    }
+</form>

@@ -1,0 +1,25 @@
+﻿@model List<Class>
+
+<h2>Manage Classes</h2>
+
+<p><a asp-action="CreateClass" class="btn btn-primary">Create New Class</a></p>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Description</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var cls in Model)
+        {
+            <tr>
+                <td>@cls.Name</td>
+                <td>@cls.Description</td>
+                <td><a asp-action="ClassDetails" asp-route-id="@cls.Id" class="btn btn-info btn-sm">Details</a></td>
+            </tr>
+        }
+    </tbody>
+</table>
