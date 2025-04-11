@@ -1,41 +1,82 @@
-﻿@model ELearningWeb.Models.ViewModel.QuizViewModel
- 
-<h2>Create Quiz</h2>
- 
+﻿@model ELearningWeb.Models.ViewModel.CreateQuizViewModel
+
+<h2>Create Quiz for Class</h2>
+
 @if (TempData["Message"] != null)
 {
     <div class="alert alert-success mt-3">@TempData["Message"]</div>
 }
- 
+
 @if (TempData["Error"] != null)
 {
     <div class="alert alert-danger mt-3">@TempData["Error"]</div>
 }
- 
-<form asp-controller="Supervisor" asp-action="CreateQuiz" method="post">
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger mt-3">
+        @Html.ValidationSummary()
+    </div>
+}
+
+<form asp-action="CreateQuiz" method="post">
     @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="ClassId" value="@ViewBag.ClassId" />
     <div class="form-group mb-3">
         <label asp-for="Title" class="form-label">Quiz Title</label>
-        <input asp-for="Title" class="form-control" />
+        <input asp-for="Title" class="form-control" required />
         <span asp-validation-for="Title" class="text-danger"></span>
     </div>
-    <div class="form-group mb-3">
-        <label asp-for="ClassId" class="form-label">Select Class</label>
-        <select asp-for="ClassId" asp-items="@ViewBag.Classes" class="form-control" required>
-            <option value="">-- Select a Class --</option>
-        </select>
-        <span asp-validation-for="ClassId" class="text-danger"></span>
+
+    <h4 class="mt-4">Questions</h4>
+    <div id="questions-container">
+        @for (int i = 0; i < 5; i++)
+        {
+            <div class="question-row mb-3">
+                <input type="hidden" name="Questions.Index" value="@i" />
+                <div class="form-group">
+                    <label asp-for="Questions[i].Text">Question @(i + 1) Text</label>
+                    <input asp-for="Questions[i].Text" class="form-control" required />
+                    <span asp-validation-for="Questions[i].Text" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="Questions[i].Type">Question Type</label>
+                    <select asp-for="Questions[i].Type" class="form-control question-type" required>
+                        <option value="">Select Type</option>
+                        <option value="MultipleChoice">Multiple Choice</option>
+                        <option value="Text">Text</option>
+                    </select>
+                    <span asp-validation-for="Questions[i].Type" class="text-danger"></span>
+                </div>
+                <div class="form-group multiple-choice-options" style="display:none;">
+                    <label asp-for="Questions[i].Options">Options (comma-separated, e.g., A) Yes,B) No</label>
+                    <input asp-for="Questions[i].Options" class="form-control" />
+                    <span asp-validation-for="Questions[i].Options" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="Questions[i].CorrectAnswer">Correct Answer</label>
+                    <input asp-for="Questions[i].CorrectAnswer" class="form-control" required />
+                    <span asp-validation-for="Questions[i].CorrectAnswer" class="text-danger"></span>
+                </div>
+            </div>
+        }
     </div>
-    @if (!ViewData.ModelState.IsValid)
-    {
-        <div class="alert alert-danger mt-3">
-            @Html.ValidationSummary()
-        </div>
-    }
-    <button type="submit" class="btn btn-primary">Create</button>
-    <a asp-controller="Supervisor" asp-action="ClassDetails" asp-route-id="@Model.ClassId" class="btn btn-secondary">Cancel</a>
+    <button type="submit" class="btn btn-success mt-3">Create Quiz</button>
+    <a asp-action="ClassDetails" asp-route-id="@ViewBag.ClassId" class="btn btn-secondary mt-3">Cancel</a>
 </form>
- 
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('.question-type').change(function () {
+                let $row = $(this).closest('.question-row');
+                let type = $(this).val();
+                $row.find('.multiple-choice-options').toggle(type === 'MultipleChoice');
+            });
+
+            $('.question-type').trigger('change');
+        });
+    </script>
 }

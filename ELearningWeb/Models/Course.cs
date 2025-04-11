@@ -25,16 +25,16 @@ public class Course
     [StringLength(500, ErrorMessage = "Prerequisites cannot exceed 500 characters")]
     public string Prerequisites { get; set; }
 
-    [Range(0, 5, ErrorMessage = "Review rating must be between 0 and 5")]
-    public double ReviewRating { get; set; }
+    //[Range(0, 5, ErrorMessage = "Review rating must be between 0 and 5")]
+   // public double ReviewRating { get; set; }
 
     public double AverageRating => Reviews.Any() ? Reviews.Average(r => r.Rating) : 0; // Calculate average rating
 
     public List<ClassCourse> ClassCourses { get; set; } = new List<ClassCourse>();
-    public List<StudentCourseProgress> StudentProgress { get; set; } = new List<StudentCourseProgress>();
+    public List<StudentCourseProgress> CourseProgress { get; set; } = new List<StudentCourseProgress>();
     public List<Review> Reviews { get; set; } = new List<Review>();
 
-    public List<DiscussionPost> DiscussionPosts { get; set;} = new List<DiscussionPost>();
+    public List<DiscussionPost> DiscussionPosts { get; set; } = new List<DiscussionPost>();
 
-   
+
 }

@@ -17,14 +17,16 @@ namespace ELearningWeb.Models.ViewModel
 
         [Required(ErrorMessage = "Answers are required for display")]
         [Display(Name = "Student Answers")]
-        public string Answers { get; set; } // JSON string of answers
+        public string Answers { get; set; }
 
         [Required(ErrorMessage = "Grade is required")]
         [Range(0, 100, ErrorMessage = "Grade must be between 0 and 100")]
         [Display(Name = "Grade")]
-        public double Grade { get; set; }
+        public int Grade { get; set; }
 
         [Required]
         public int ClassId { get; set; }
+
+        public Dictionary<int, bool> Correctness { get; set; } = new Dictionary<int, bool>();
     }
 }

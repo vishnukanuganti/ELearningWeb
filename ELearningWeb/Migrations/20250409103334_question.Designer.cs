@@ -4,6 +4,7 @@ using ELearningWeb.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ELearningWeb.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250409103334_question")]
+    partial class question
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -45,6 +48,9 @@ namespace ELearningWeb.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<double>("ReviewRating")
+                        .HasColumnType("float");
+
                     b.Property<string>("Subject")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -66,6 +72,7 @@ namespace ELearningWeb.Migrations
                             Name = "Introduction to C#",
                             Overview = "Learn C# basics",
                             Prerequisites = "None",
+                            ReviewRating = 4.5,
                             Subject = "Programming",
                             Syllabus = "Variables, Loops, OOP"
                         },
@@ -75,6 +82,7 @@ namespace ELearningWeb.Migrations
                             Name = "Web Development with ASP.NET",
                             Overview = "Build web apps",
                             Prerequisites = "C# basics",
+                            ReviewRating = 4.7999999999999998,
                             Subject = "Web Development",
                             Syllabus = "MVC, Razor, EF Core"
                         },
@@ -84,6 +92,7 @@ namespace ELearningWeb.Migrations
                             Name = "Data Structures",
                             Overview = "Core CS concepts",
                             Prerequisites = "Programming basics",
+                            ReviewRating = 4.2000000000000002,
                             Subject = "Computer Science",
                             Syllabus = "Arrays, Linked Lists, Trees"
                         },
@@ -93,9 +102,79 @@ namespace ELearningWeb.Migrations
                             Name = "SQL Fundamentals",
                             Overview = "Database basics",
                             Prerequisites = "None",
+                            ReviewRating = 4.0,
                             Subject = "Database",
                             Syllabus = "Queries, Joins, Indexes"
                         });
+                });
+
+            modelBuilder.Entity("DiscussionPost", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ClassId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("CourseId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("PostedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClassId");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("DiscussionPosts");
+                });
+
+            modelBuilder.Entity("DiscussionReply", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("PostId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("PostedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PostId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("DiscussionReplies");
                 });
 
             modelBuilder.Entity("ELearningWeb.Models.ApplicationUser", b =>
@@ -224,77 +303,6 @@ namespace ELearningWeb.Migrations
                     b.HasIndex("StudentId");
 
                     b.ToTable("ClassStudents");
-                });
-
-            modelBuilder.Entity("ELearningWeb.Models.DiscussionPost", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("ClassId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("CourseId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ClassId");
-
-                    b.HasIndex("CourseId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("DiscussionPosts");
-                });
-
-            modelBuilder.Entity("ELearningWeb.Models.DiscussionReply", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("PostId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PostId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("DiscussionReplies");
                 });
 
             modelBuilder.Entity("ELearningWeb.Models.Question", b =>
@@ -577,6 +585,52 @@ namespace ELearningWeb.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("DiscussionPost", b =>
+                {
+                    b.HasOne("ELearningWeb.Models.Class", "Class")
+                        .WithMany("DiscussionPosts")
+                        .HasForeignKey("ClassId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Course", "Course")
+                        .WithMany("DiscussionPosts")
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ELearningWeb.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Class");
+
+                    b.Navigation("Course");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("DiscussionReply", b =>
+                {
+                    b.HasOne("DiscussionPost", "Post")
+                        .WithMany("Replies")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ELearningWeb.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Post");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ELearningWeb.Models.ClassCourse", b =>
                 {
                     b.HasOne("ELearningWeb.Models.Class", "Class")
@@ -615,47 +669,6 @@ namespace ELearningWeb.Migrations
                     b.Navigation("Student");
                 });
 
-            modelBuilder.Entity("ELearningWeb.Models.DiscussionPost", b =>
-                {
-                    b.HasOne("ELearningWeb.Models.Class", "Class")
-                        .WithMany("DiscussionPosts")
-                        .HasForeignKey("ClassId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Course", null)
-                        .WithMany("DiscussionPosts")
-                        .HasForeignKey("CourseId");
-
-                    b.HasOne("ELearningWeb.Models.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Class");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("ELearningWeb.Models.DiscussionReply", b =>
-                {
-                    b.HasOne("ELearningWeb.Models.DiscussionPost", "Post")
-                        .WithMany("Replies")
-                        .HasForeignKey("PostId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("ELearningWeb.Models.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Post");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("ELearningWeb.Models.Question", b =>
                 {
                     b.HasOne("ELearningWeb.Models.Quiz", "Quiz")
@@ -685,7 +698,7 @@ namespace ELearningWeb.Migrations
                         .HasForeignKey("ClassId");
 
                     b.HasOne("ELearningWeb.Models.Quiz", "Quiz")
-                        .WithMany("QuizAttempts")
+                        .WithMany("Attempts")
                         .HasForeignKey("QuizId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -801,6 +814,11 @@ namespace ELearningWeb.Migrations
                     b.Navigation("Reviews");
                 });
 
+            modelBuilder.Entity("DiscussionPost", b =>
+                {
+                    b.Navigation("Replies");
+                });
+
             modelBuilder.Entity("ELearningWeb.Models.ApplicationUser", b =>
                 {
                     b.Navigation("ClassStudents");
@@ -823,16 +841,11 @@ namespace ELearningWeb.Migrations
                     b.Navigation("Quizzes");
                 });
 
-            modelBuilder.Entity("ELearningWeb.Models.DiscussionPost", b =>
-                {
-                    b.Navigation("Replies");
-                });
-
             modelBuilder.Entity("ELearningWeb.Models.Quiz", b =>
                 {
-                    b.Navigation("Questions");
+                    b.Navigation("Attempts");
 
-                    b.Navigation("QuizAttempts");
+                    b.Navigation("Questions");
                 });
 #pragma warning restore 612, 618
         }

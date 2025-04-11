@@ -24,6 +24,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFramework
 builder.Services.ConfigureApplicationCookie(options =>
 
 {
+    options.ExpireTimeSpan = TimeSpan.FromMinutes(15);
+    options.SlidingExpiration = true;
 
     options.LoginPath = $"/Identity/Account/Login";
 
@@ -33,14 +35,14 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 });
 
-builder.Services.ConfigureApplicationCookie(options =>
-{
-    options.ExpireTimeSpan = TimeSpan.FromMinutes(15);
-    options.SlidingExpiration = true; // Reset the expiration on each request
-    options.Cookie.HttpOnly = true;
-    options.LoginPath = "/Account/Login";
-    options.LogoutPath = "/Account/Logout";
-});
+//builder.Services.ConfigureApplicationCookie(options =>
+//{
+//    options.ExpireTimeSpan = TimeSpan.FromMinutes(15);
+//    options.SlidingExpiration = true; // Reset the expiration on each request
+//    options.Cookie.HttpOnly = true;
+//    options.LoginPath = "/Account/Login";
+//    options.LogoutPath = "/Account/Logout";
+//});
 
 builder.Services.AddControllersWithViews();
 

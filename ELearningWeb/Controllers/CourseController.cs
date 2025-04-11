@@ -36,25 +36,25 @@ public class CourseController : Controller
             courses = courses.Where(c => c.Subject == subjectFilter);
         }
 
+        // Switch to client-side evaluation for sorting by AverageRating
+        var courseList = courses.AsEnumerable();
+
         // Sort by review
         switch (sortOrder)
         {
             case "rating_desc":
-                courses = courses.OrderByDescending(c => c.AverageRating);
+                courseList = courseList.OrderByDescending(c => c.AverageRating);
                 break;
             case "rating_asc":
-                courses = courses.OrderBy(c => c.AverageRating);
+                courseList = courseList.OrderBy(c => c.AverageRating);
                 break;
             default:
-                courses = courses.OrderBy(c => c.Name);
+                courseList = courseList.OrderBy(c => c.Name);
                 break;
         }
 
-        //ViewBag.Subjects = _context.Courses.Select(c => c.Subject).Distinct().ToList();
-        //var courses1 = _context.Courses.ToList();
-        //return View(courses1);
         ViewBag.Subjects = _context.Courses.Select(c => c.Subject).Distinct().ToList();
-        return View(courses.ToList());
+        return View(courseList.ToList());
     }
 
     [HttpGet]
@@ -93,7 +93,7 @@ public class CourseController : Controller
         var review = new Review
         {
             CourseId = courseId,
-            UserId = userId,
+            UserId =  userId,
             Rating = rating,
             Comment = comment
         };
@@ -117,7 +117,7 @@ public class CourseController : Controller
             return RedirectToAction(nameof(Index));
         }
 
-        if (_context.StudentCourseProgress.Any(scp => scp.StudentId == userId && scp.CourseId == courseId))
+        if (_context.CourseProgress.Any(scp => scp.StudentId == userId && scp.CourseId == courseId))
         {
             TempData["Message"] = "You are already enrolled in this course.";
         }
@@ -129,7 +129,7 @@ public class CourseController : Controller
                 CourseId = courseId,
                 Progress = 0
             };
-            _context.StudentCourseProgress.Add(progress);
+            _context.CourseProgress.Add(progress);
             await _context.SaveChangesAsync();
             TempData["Message"] = "Successfully enrolled in the course!";
         }

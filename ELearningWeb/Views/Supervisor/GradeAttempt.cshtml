@@ -1,0 +1,54 @@
+﻿@model ELearningWeb.Models.ViewModel.GradeAttemptViewModel
+
+<h2>Grade Quiz Attempt</h2>
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success mt-3">@TempData["Message"]</div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger mt-3">@TempData["Error"]</div>
+}
+
+<form asp-action="GradeAttempt" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="AttemptId" />
+    <div class="form-group mb-3">
+        <label asp-for="QuizTitle" class="form-label"></label>
+        <input asp-for="QuizTitle" class="form-control" readonly />
+    </div>
+    <div class="form-group mb-3">
+        <label asp-for="StudentName" class="form-label"></label>
+        <input asp-for="StudentName" class="form-control" readonly />
+    </div>
+    <div class="form-group mb-3">
+        <label asp-for="Answers" class="form-label">Student Answers</label>
+        <textarea asp-for="Answers" class="form-control" rows="5" readonly></textarea>
+    </div>
+    @foreach (var questionId in Model.Correctness.Keys)
+    {
+        <div class="form-group mb-3">
+            <label>Question @questionId Correct?</label>
+            <input type="checkbox" asp-for="Correctness[@questionId]" disabled checked="@Model.Correctness[questionId]" />
+        </div>
+    }
+    <div class="form-group mb-3">
+        <label asp-for="Grade" class="form-label">Grade (0-100)</label>
+        <input asp-for="Grade" class="form-control" type="number" step="1" min="0" max="100" required />
+        <span asp-validation-for="Grade" class="text-danger"></span>
+    </div>
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger mt-3">
+            @Html.ValidationSummary()
+        </div>
+    }
+    <button type="submit" class="btn btn-success">Submit Grade</button>
+    <a asp-action="ClassDetails" asp-route-id="@Model.ClassId" class="btn btn-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

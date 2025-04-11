@@ -4,6 +4,7 @@ using ELearningWeb.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ELearningWeb.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250409191130_discussionforum")]
+    partial class discussionforum
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -45,6 +48,9 @@ namespace ELearningWeb.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<double>("ReviewRating")
+                        .HasColumnType("float");
+
                     b.Property<string>("Subject")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -66,6 +72,7 @@ namespace ELearningWeb.Migrations
                             Name = "Introduction to C#",
                             Overview = "Learn C# basics",
                             Prerequisites = "None",
+                            ReviewRating = 4.5,
                             Subject = "Programming",
                             Syllabus = "Variables, Loops, OOP"
                         },
@@ -75,6 +82,7 @@ namespace ELearningWeb.Migrations
                             Name = "Web Development with ASP.NET",
                             Overview = "Build web apps",
                             Prerequisites = "C# basics",
+                            ReviewRating = 4.7999999999999998,
                             Subject = "Web Development",
                             Syllabus = "MVC, Razor, EF Core"
                         },
@@ -84,6 +92,7 @@ namespace ELearningWeb.Migrations
                             Name = "Data Structures",
                             Overview = "Core CS concepts",
                             Prerequisites = "Programming basics",
+                            ReviewRating = 4.2000000000000002,
                             Subject = "Computer Science",
                             Syllabus = "Arrays, Linked Lists, Trees"
                         },
@@ -93,6 +102,7 @@ namespace ELearningWeb.Migrations
                             Name = "SQL Fundamentals",
                             Overview = "Database basics",
                             Prerequisites = "None",
+                            ReviewRating = 4.0,
                             Subject = "Database",
                             Syllabus = "Queries, Joins, Indexes"
                         });

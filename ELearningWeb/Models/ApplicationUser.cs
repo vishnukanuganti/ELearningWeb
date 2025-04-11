@@ -15,6 +15,9 @@ namespace ELearningWeb.Models
         public string FullName { get; set; }
 
         public List<ClassStudent> ClassStudents { get; set; } = new List<ClassStudent>();
+
+        public List<QuizAttempt> QuizAttempts { get; set; } = new List<QuizAttempt>();
+
         public List<StudentCourseProgress> CourseProgress { get; set; } = new List<StudentCourseProgress>(); // New: Tracks course enrollment and completion
     }
 }

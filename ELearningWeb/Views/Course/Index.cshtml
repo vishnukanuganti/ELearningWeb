@@ -18,7 +18,7 @@
         </div>
         <div class="col-md-3">
             <select name="sortOrder" class="form-control">
-                <option value="">Sort by Name</option>
+                <option value="">Sort by Rating</option>
                 <option value="rating_desc">Rating (High to Low)</option>
                 <option value="rating_asc">Rating (Low to High)</option>
             </select>
@@ -51,7 +51,7 @@
     <tbody>
         @foreach (var course in Model)
         {
-            <tr>
+            <tr> 
                 <td>@Html.ActionLink(course.Name, "CourseDetails", new { id = course.Id })</td>
                 <td>@course.Subject</td>
                 <td>@course.AverageRating.ToString("F1") / 5</td>

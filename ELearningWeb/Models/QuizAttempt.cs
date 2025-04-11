@@ -7,19 +7,18 @@ namespace ELearningWeb.Models
         [Key]
         public int Id { get; set; }
 
-        [Required(ErrorMessage = "Quiz ID is required")]
+        [Required]
         public int QuizId { get; set; }
         public Quiz Quiz { get; set; }
 
-        [Required(ErrorMessage = "Student ID is required")]
+        [Required]
         public string StudentId { get; set; }
         public ApplicationUser Student { get; set; }
 
-        [Required(ErrorMessage = "Answers are required")]
-        [StringLength(1000, ErrorMessage = "Answers cannot exceed 1000 characters")]
-        public string Answers { get; set; }
+        [Required]
+        public string? Answers { get; set; } // JSON serialized Dictionary<int, string>
 
-        [Range(0, 100, ErrorMessage = "Grade must be between 0 and 100")]
-        public double? Grade { get; set; }
+        public int? Grade { get; set; } // Using int? for simplicity
     }
 }
+

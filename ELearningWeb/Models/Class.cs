@@ -19,6 +19,8 @@ namespace ELearningWeb.Models
         public List<ClassCourse> ClassCourses { get; set; } = new List<ClassCourse>();
         public List<ClassStudent> ClassStudents { get; set; } = new List<ClassStudent>();
         public List<Quiz> Quizzes { get; set; } = new List<Quiz>();
+
+        public List<QuizAttempt> QuizAttempts { get; set; } = new List<QuizAttempt>();
         public List<DiscussionPost> DiscussionPosts { get; set; } = new List<DiscussionPost>(); // Added
     }
 }

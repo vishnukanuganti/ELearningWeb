@@ -1,6 +1,12 @@
 ﻿@model ELearningWeb.Models.ViewModel.QuizAttemptViewModel
 
-<h2>Attempt Quiz</h2>
+<h2>Attempt Quiz:</h2>
+
+@* <div class="form-group mb-3"> *@
+@*     <label asp-for="Title" class="form-label">Quiz Title</label> *@
+@*     <input asp-for="Title" class="form-control" required /> *@
+@*     <span asp-validation-for="Title" class="text-danger"></span> *@
+@* </div> *@
 
 @if (TempData["Message"] != null)
 {
@@ -12,26 +18,80 @@
     <div class="alert alert-danger mt-3">@TempData["Error"]</div>
 }
 
-<form asp-action="AttemptQuiz" method="post">
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger mt-3">
+        @Html.ValidationSummary()
+    </div>
+}
+
+<form asp-action="AttemptQuiz" method="post" id="quizForm">
     @Html.AntiForgeryToken()
     <input type="hidden" asp-for="QuizId" />
-    <input type="hidden" asp-for="StudentId" />
-    <div class="form-group mb-3">
-        <label asp-for="Answers" class="form-label">Your Answers</label>
-        <textarea asp-for="Answers" class="form-control" rows="5" required></textarea>
-        <span asp-validation-for="Answers" class="text-danger"></span>
-    </div>
-    @if (!ViewData.ModelState.IsValid)
+    @for (int i = 0; i < Model.Questions.Count; i++)
     {
-        <div class="alert alert-danger mt-3">
-            @Html.ValidationSummary()
+        var question = Model.Questions[i];
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Question @(i + 1): @question.Text</h5>
+                @if (question.Type == "MultipleChoice")
+                {
+                    var options = question.Options?.Split(',').Select(o => o.Trim()).ToList() ?? new List<string>();
+                    <div class="form-check" data-question-id="@question.Id">
+                        @foreach (var option in options)
+                        {
+                            <div class="form-check">
+                                <input type="radio" asp-for="Answers[@question.Id]" value="@option" class="form-check-input" required />
+                                <label class="form-check-label">@option</label>
+                            </div>
+                        }
+                    </div>
+                }
+                else if (question.Type == "Text")
+                {
+                    <textarea asp-for="Answers[@question.Id]" class="form-control" rows="3" required></textarea>
+                }
+            </div>
         </div>
     }
+
     <button type="submit" class="btn btn-primary">Submit Attempt</button>
     <a asp-action="Dashboard" class="btn btn-secondary">Cancel</a>
 </form>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#quizForm').submit(function (e) {
+                var answers = {};
+                $('[name^="Answers"]').each(function () {
+                    var questionId = $(this).attr('name').match(/\d+/)[0];
+                    if ($(this).is(':radio')) {
+                        var selectedValue = $(this).closest('.form-check[data-question-id]').find('input[type="radio"]:checked').val();
+                        if (selectedValue) {
+                            answers[questionId] = selectedValue;
+                        }
+                    } else {
+                        answers[questionId] = $(this).val();
+                    }
+                });
+
+                if (Object.keys(answers).length !== @Model.Questions.Count) {
+                    e.preventDefault();
+                    alert('Please answer all @Model.Questions.Count questions before submitting.');
+                    return;
+                }
+
+                $('input[name="Answers"]').remove();
+                $('<input>').attr({
+                    type: 'hidden',
+                    name: 'Answers',
+                    value: JSON.stringify(answers)
+                }).appendTo('#quizForm');
+            });
+        });
+    </script>
 }
 

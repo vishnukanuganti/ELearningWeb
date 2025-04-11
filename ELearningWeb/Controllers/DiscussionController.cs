@@ -1,94 +1,116 @@
-﻿using ELearningWeb.Data;
-using ELearningWeb.Models;
-using ELearningWeb.Models.ViewModel;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
+using ELearningWeb.Data;
+using ELearningWeb.Models;
+using ELearningWeb.ViewModels;
 using System.Threading.Tasks;
+using System.Linq;
+using System.Diagnostics;
 
-namespace ELearningWeb.Controllers
+[Authorize]
+public class DiscussionController : Controller
 {
-    [Authorize]
-    public class DiscussionController : Controller
+    private readonly ApplicationDbContext _context;
+    private readonly UserManager<ApplicationUser> _userManager;
+
+    public DiscussionController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
     {
-        private readonly ApplicationDbContext _context;
-        private readonly UserManager<ApplicationUser> _userManager;
+        _context = context;
+        _userManager = userManager;
+    }
 
-        public DiscussionController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
-        {
-            _context = context;
-            _userManager = userManager;
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreatePost(DiscussionPostViewModel postViewModel)
-        {
-            if (!ModelState.IsValid)
-            {
-                return Json(new { success = false, message = "Invalid post data." });
-            }
-
-            var post = new DiscussionPost
-            {
-                ClassId = postViewModel.ClassId,
-                UserId = _userManager.GetUserId(User),
-                Content = postViewModel.Content,
-                PostedAt = DateTime.Now
-            };
-
-            try
-            {
-                _context.DiscussionPosts.Add(post);
-                await _context.SaveChangesAsync();
-
-                // Return the new post as a view model for the client to append
-                var newPost = new DiscussionPostViewModel
-                {
-                    Id = post.Id,
-                    ClassId = post.ClassId,
-                    UserId = post.UserId,
-                    UserName = (await _userManager.GetUserAsync(User)).FullName,
-                    Content = post.Content,
-                    PostedAt = post.PostedAt
-                };
-
-                return Json(new { success = true, post = newPost });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, message = $"Error creating post: {ex.Message}" });
-            }
-        }
-
-        [HttpGet]
-        public IActionResult GetPosts(int classId, DateTime? after)
-        {
-            var query = _context.DiscussionPosts
-                .Include(dp => dp.User)
-                .Where(dp => dp.ClassId == classId);
-
-            if (after.HasValue)
-            {
-                query = query.Where(dp => dp.PostedAt > after.Value);
-            }
-
-            var posts = query
-                .OrderBy(dp => dp.PostedAt)
-                .Select(dp => new DiscussionPostViewModel
-                {
-                    Id = dp.Id,
-                    ClassId = dp.ClassId,
-                    UserId = dp.UserId,
-                    UserName = dp.User.FullName,
-                    Content = dp.Content,
-                    PostedAt = dp.PostedAt
-                })
+    [HttpGet]
+    public async Task<IActionResult> Index(int? classId)
+    {
+        var posts = string.IsNullOrEmpty(classId.ToString())
+            ? _context.DiscussionPosts.Include(p => p.User).Include(p => p.Replies).ThenInclude(r => r.User).ToList()
+            : _context.DiscussionPosts
+                .Where(p => p.ClassId == classId)
+                .Include(p => p.User)
+                .Include(p => p.Replies).ThenInclude(r => r.User)
                 .ToList();
 
-            return Json(new { success = true, posts });
+        ViewBag.ClassId = classId;
+        return View(posts);
+    }
+
+    [HttpGet]
+    public IActionResult CreatePost(int? classId)
+    {
+        ViewBag.ClassId = classId;
+        return View(new CreateDiscussionPostViewModel());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreatePost(CreateDiscussionPostViewModel viewModel)
+    {
+        if (!ModelState.IsValid)
+        {
+            ViewBag.ClassId = viewModel.ClassId;
+            return View(viewModel);
         }
+
+        var userId = _userManager.GetUserId(User);
+        var post = new DiscussionPost
+        {
+            Title = viewModel.Title,
+            Content = viewModel.Content,
+            UserId = userId,
+            ClassId = viewModel.ClassId
+        };
+
+        _context.DiscussionPosts.Add(post);
+        await _context.SaveChangesAsync();
+
+        TempData["Message"] = "Post created successfully!";
+        return RedirectToAction(nameof(Index), new { classId = viewModel.ClassId });
+    }
+
+    [HttpGet]
+    public IActionResult CreateReply(int postId)
+    {
+        var post = _context.DiscussionPosts.FirstOrDefault(p => p.Id == postId);
+        if (post == null)
+        {
+            TempData["Error"] = "Post not found.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        ViewBag.PostId = postId;
+        return View(new CreateDiscussionReplyViewModel());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateReply(CreateDiscussionReplyViewModel viewModel)
+    {
+        if (!ModelState.IsValid)
+        {
+            ViewBag.PostId = viewModel.PostId;
+            return View(viewModel);
+        }
+
+        var post = await _context.DiscussionPosts.FindAsync(viewModel.PostId);
+        if (post == null)
+        {
+            TempData["Error"] = "Post not found.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var reply = new DiscussionReply
+        {
+            Content = viewModel.Content,
+            UserId = _userManager.GetUserId(User),
+            PostId = viewModel.PostId
+        };
+
+        _context.DiscussionReplies.Add(reply);
+        await _context.SaveChangesAsync();
+
+        TempData["Message"] = "Reply added successfully!";
+        return RedirectToAction(nameof(Index), new { classId = post.ClassId });
     }
 }

@@ -1,10 +1,13 @@
 ﻿using ELearningWeb.Data;
 using ELearningWeb.Models;
 using ELearningWeb.Models.ViewModel;
+using ELearningWeb.ViewModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
+using System.Diagnostics;
 
 namespace ELearningWeb.Controllers
 {
@@ -27,34 +30,27 @@ namespace ELearningWeb.Controllers
             var userId = _userManager.GetUserId(User);
             var model = new StudentDashboardViewModel
             {
-                EnrolledCourses = _context.StudentCourseProgress
+                EnrolledCourses = _context.CourseProgress
                     .Where(scp => scp.StudentId == userId)
                     .Include(scp => scp.Course)
                     .ToList(),
                 Classes = _context.ClassStudents
                     .Where(cs => cs.StudentId == userId)
                     .Include(cs => cs.Class)
-                        .ThenInclude(c => c.ClassCourses)
-                        .ThenInclude(cc => cc.Course)
-                    .Include(cs => cs.Class)
                         .ThenInclude(c => c.Quizzes)
-                        .ThenInclude(q => q.Attempts)
-                    .Include(cs => cs.Class) // Added to include DiscussionPosts
-                        .ThenInclude(c => c.DiscussionPosts) // Include discussion posts
-                        .ThenInclude(dp => dp.User)
+                        .ThenInclude(q => q.Questions)
+                    .Include(cs => cs.Class)
+                        .ThenInclude(c => c.QuizAttempts)
+                        .ThenInclude(qa => qa.Student)
                     .Select(cs => cs.Class)
                     .ToList(),
                 QuizAttemptViewModels = _context.QuizAttempts
                     .Where(qa => qa.StudentId == userId)
                     .Include(qa => qa.Quiz)
-                    .Include(qa => qa.Student)
-                    .Select(qa => new QuizAttemptViewModel
+                    .Select(qa => new StudentQuizAttemptViewModel
                     {
-                        //Id = qa.Id,
-                        QuizId = qa.QuizId,
+                        Id = qa.Id,
                         QuizTitle = qa.Quiz.Title,
-                        StudentId = qa.StudentId,
-                        StudentName = qa.Student.FullName,
                         Answers = qa.Answers,
                         Grade = qa.Grade
                     })
@@ -65,62 +61,145 @@ namespace ELearningWeb.Controllers
 
         // GET: /Student/AttemptQuiz/{quizId}
         [HttpGet]
-        public IActionResult AttemptQuiz(int QuizId)
+        public async Task<IActionResult> AttemptQuiz(int quizId)
         {
-            var userId = _userManager.GetUserId(User);
-            var quiz = _context.Quizzes
-                .Include(q => q.Attempts)
-                .Include(q => q.Class).ThenInclude(c => c.ClassStudents)
-                .FirstOrDefault(q => q.Id == QuizId);
+            var quiz = await _context.Quizzes
+                .Include(q => q.Questions)
+                .FirstOrDefaultAsync(q => q.Id == quizId);
 
-            if (quiz == null || !quiz.Class.ClassStudents.Any(cs => cs.StudentId == userId))
+            if (quiz == null || quiz.Questions.Count != 5)
             {
-                TempData["Message"] = "You must be enrolled in the class to attempt this quiz.";
+                TempData["Error"] = "Quiz not found or does not contain exactly 5 questions.";
                 return RedirectToAction(nameof(Dashboard));
             }
 
-            if (quiz.Attempts.Any(a => a.StudentId == userId))
+            var viewModel = new QuizAttemptViewModel
             {
-                TempData["Message"] = "You have already attempted this quiz.";
-                return RedirectToAction(nameof(Dashboard));
-            }
-
-            return View(quiz);
-        }
-
-        // POST: /Student/AttemptQuiz
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AttemptQuiz(int quizId, string answers)
-        {
-            var userId = _userManager.GetUserId(User);
-            var quiz = _context.Quizzes
-                .Include(q => q.Class).ThenInclude(c => c.ClassStudents)
-                .FirstOrDefault(q => q.Id == quizId);
-
-            if (quiz == null || !quiz.Class.ClassStudents.Any(cs => cs.StudentId == userId))
-            {
-                TempData["Message"] = "You must be enrolled in the class to attempt this quiz.";
-                return RedirectToAction(nameof(Dashboard));
-            }
-
-            if (_context.QuizAttempts.Any(a => a.QuizId == quizId && a.StudentId == userId))
-            {
-                TempData["Message"] = "You have already attempted this quiz.";
-                return RedirectToAction(nameof(Dashboard));
-            }
-
-            var attempt = new QuizAttempt
-            {
-                QuizId = quizId,
-                StudentId = userId,
-                Answers = answers
+                QuizId = quiz.Id,
+                //Title = quiz.Title,
+                Questions = quiz.Questions.Select(q => new AttemptQuestionViewModel
+                {
+                    Id = q.Id,
+                    Text = q.Text,
+                    Type = q.Type,
+                    Options = q.Type == "MultipleChoice" ? q.Options : null
+                }).ToList()
             };
 
-            _context.QuizAttempts.Add(attempt);
-            await _context.SaveChangesAsync();
-            TempData["Message"] = "Quiz submitted successfully!";
-            return RedirectToAction(nameof(Dashboard));
+            // Initialize Answers dictionary with all question IDs
+            foreach (var question in viewModel.Questions)
+            {
+                if (!viewModel.Answers.ContainsKey(question.Id))
+                {
+                    viewModel.Answers[question.Id] = string.Empty; // Default empty string
+                }
+            }
+
+            return View(viewModel);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AttemptQuiz(QuizAttemptViewModel viewModel)
+        {
+            // Debug ModelState
+            if (!ModelState.IsValid)
+            {
+                foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    Debug.WriteLine($"Validation Error: {error.ErrorMessage}");
+                }
+
+                var quizForValidation = await _context.Quizzes
+                    .Include(q => q.Questions)
+                    .FirstOrDefaultAsync(q => q.Id == viewModel.QuizId);
+
+                if (quizForValidation == null || quizForValidation.Questions.Count != 5)
+                {
+                    TempData["Error"] = "Quiz not found or does not contain exactly 5 questions.";
+                    return RedirectToAction(nameof(Dashboard));
+                }
+
+                viewModel.Questions = quizForValidation.Questions.Select(q => new AttemptQuestionViewModel
+                {
+                    Id = q.Id,
+                    Text = q.Text,
+                    Type = q.Type,
+                    Options = q.Type == "MultipleChoice" ? q.Options : null
+                }).ToList();
+
+                // Reinitialize Answers for redisplay
+                foreach (var question in viewModel.Questions)
+                {
+                    if (!viewModel.Answers.ContainsKey(question.Id))
+                    {
+                        viewModel.Answers[question.Id] = string.Empty;
+                    }
+                }
+
+                return View(viewModel);
+            }
+
+            Debug.WriteLine($"QuizId: {viewModel.QuizId}");
+            Debug.WriteLine($"Answers: {Newtonsoft.Json.JsonConvert.SerializeObject(viewModel.Answers)}");
+
+            var quiz = await _context.Quizzes
+                .FirstOrDefaultAsync(q => q.Id == viewModel.QuizId);
+
+            //if (quiz == null || quiz.Questions.Count != 5)
+            //{
+            //    TempData["Error"] = "Quiz not found or does not contain exactly 5 questions.";
+            //    return RedirectToAction(nameof(Dashboard));
+            //}
+
+            // Validate all questions are answered
+            if (viewModel.Answers.Count != 5 || viewModel.Answers.Values.Any(string.IsNullOrEmpty))
+            {
+                ModelState.AddModelError("", "Please answer all 5 questions.");
+                viewModel.Questions = (await _context.Quizzes
+                    .Include(q => q.Questions)
+                    .FirstOrDefaultAsync(q => q.Id == viewModel.QuizId))?.Questions
+                    .Select(q => new AttemptQuestionViewModel
+                    {
+                        Id = q.Id,
+                        Text = q.Text,
+                        Type = q.Type,
+                        Options = q.Type == "MultipleChoice" ? q.Options : null
+                    }).ToList() ?? new List<AttemptQuestionViewModel>();
+                return View(viewModel);
+            }
+
+            var answersJson = JsonConvert.SerializeObject(viewModel.Answers);
+            var attempt = new QuizAttempt
+            {
+                QuizId = viewModel.QuizId,
+                StudentId = _userManager.GetUserId(User),
+                Answers = answersJson
+            };
+
+            try
+            {
+                _context.QuizAttempts.Add(attempt);
+                await _context.SaveChangesAsync();
+                TempData["Message"] = "Quiz submitted successfully!";
+                return RedirectToAction(nameof(Dashboard));
+            }
+            catch (DbUpdateException ex)
+            {
+                Debug.WriteLine($"Database Error: {ex.InnerException?.Message}");
+                ModelState.AddModelError("", "An error occurred while saving the quiz attempt. Please try again.");
+                viewModel.Questions = (await _context.Quizzes
+                    .Include(q => q.Questions)
+                    .FirstOrDefaultAsync(q => q.Id == viewModel.QuizId))?.Questions
+                    .Select(q => new AttemptQuestionViewModel
+                    {
+                        Id = q.Id,
+                        Text = q.Text,
+                        Type = q.Type,
+                        Options = q.Type == "MultipleChoice" ? q.Options : null
+                    }).ToList() ?? new List<AttemptQuestionViewModel>();
+                return View(viewModel);
+            }
         }
 
         // POST: /Student/MarkCourseComplete
@@ -129,7 +208,7 @@ namespace ELearningWeb.Controllers
         public async Task<IActionResult> MarkCourseComplete(int courseId)
         {
             var userId = _userManager.GetUserId(User);
-            var progress = await _context.StudentCourseProgress
+            var progress = await _context.CourseProgress
                 .FirstOrDefaultAsync(scp => scp.StudentId == userId && scp.CourseId == courseId);
 
             if (progress == null)

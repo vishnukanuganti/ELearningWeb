@@ -1,0 +1,35 @@
+﻿@model List<ELearningWeb.Models.DiscussionPost>
+
+<h2>Discussion Forum</h2>
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success mt-3">@TempData["Message"]</div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger mt-3">@TempData["Error"]</div>
+}
+
+<a asp-action="CreatePost" asp-route-classId="@ViewBag.ClassId" class="btn btn-primary mb-3">Create New Post</a>
+
+@foreach (var post in Model)
+{
+    <div class="card mb-3">
+        <div class="card-header">
+            <strong>@post.Title</strong> by @post.User.FullName on @post.CreatedDate
+        </div>
+        <div class="card-body">
+            <p class="card-text">@post.Content</p>
+            <a asp-action="CreateReply" asp-route-postId="@post.Id" class="btn btn-secondary">Reply</a>
+        </div>
+        <div class="card-footer">
+            <h5>Replies</h5>
+            @foreach (var reply in post.Replies)
+            {
+                <p><strong>@reply.User.FullName</strong> on @reply.CreatedDate: @reply.Content</p>
+            }
+        </div>
+    </div>
+}

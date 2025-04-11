@@ -1,0 +1,41 @@
+﻿@model ELearningWeb.ViewModels.CreateDiscussionPostViewModel
+
+<h2>Create New Discussion Post</h2>
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-success mt-3">@TempData["Message"]</div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger mt-3">@TempData["Error"]</div>
+}
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger mt-3">
+        @Html.ValidationSummary()
+    </div>
+}
+
+<form asp-action="CreatePost" method="post">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="ClassId" value="@ViewBag.ClassId" />
+    <div class="form-group mb-3">
+        <label asp-for="Title" class="form-label"></label>
+        <input asp-for="Title" class="form-control" />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+    <div class="form-group mb-3">
+        <label asp-for="Content" class="form-label"></label>
+        <textarea asp-for="Content" class="form-control" rows="5"></textarea>
+        <span asp-validation-for="Content" class="text-danger"></span>
+    </div>
+    <button type="submit" class="btn btn-primary">Create Post</button>
+    <a asp-action="Index" asp-route-classId="@ViewBag.ClassId" class="btn btn-secondary">Cancel</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

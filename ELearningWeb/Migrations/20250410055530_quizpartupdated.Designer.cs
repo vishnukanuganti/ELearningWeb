@@ -4,6 +4,7 @@ using ELearningWeb.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ELearningWeb.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250410055530_quizpartupdated")]
+    partial class quizpartupdated
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -45,6 +48,9 @@ namespace ELearningWeb.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<double>("ReviewRating")
+                        .HasColumnType("float");
+
                     b.Property<string>("Subject")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -66,6 +72,7 @@ namespace ELearningWeb.Migrations
                             Name = "Introduction to C#",
                             Overview = "Learn C# basics",
                             Prerequisites = "None",
+                            ReviewRating = 4.5,
                             Subject = "Programming",
                             Syllabus = "Variables, Loops, OOP"
                         },
@@ -75,6 +82,7 @@ namespace ELearningWeb.Migrations
                             Name = "Web Development with ASP.NET",
                             Overview = "Build web apps",
                             Prerequisites = "C# basics",
+                            ReviewRating = 4.7999999999999998,
                             Subject = "Web Development",
                             Syllabus = "MVC, Razor, EF Core"
                         },
@@ -84,6 +92,7 @@ namespace ELearningWeb.Migrations
                             Name = "Data Structures",
                             Overview = "Core CS concepts",
                             Prerequisites = "Programming basics",
+                            ReviewRating = 4.2000000000000002,
                             Subject = "Computer Science",
                             Syllabus = "Arrays, Linked Lists, Trees"
                         },
@@ -93,6 +102,7 @@ namespace ELearningWeb.Migrations
                             Name = "SQL Fundamentals",
                             Overview = "Database basics",
                             Prerequisites = "None",
+                            ReviewRating = 4.0,
                             Subject = "Database",
                             Syllabus = "Queries, Joins, Indexes"
                         });
@@ -343,13 +353,12 @@ namespace ELearningWeb.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("ClassId")
+                    b.Property<int?>("ClassId")
                         .HasColumnType("int");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -370,6 +379,9 @@ namespace ELearningWeb.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("ApplicationUserId")
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<int?>("ClassId")
                         .HasColumnType("int");
 
@@ -379,15 +391,22 @@ namespace ELearningWeb.Migrations
                     b.Property<int>("QuizId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("QuizId1")
+                        .HasColumnType("int");
+
                     b.Property<string>("StudentId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ApplicationUserId");
+
                     b.HasIndex("ClassId");
 
                     b.HasIndex("QuizId");
+
+                    b.HasIndex("QuizId1");
 
                     b.HasIndex("StudentId");
 
@@ -671,27 +690,33 @@ namespace ELearningWeb.Migrations
                 {
                     b.HasOne("ELearningWeb.Models.Class", "Class")
                         .WithMany("Quizzes")
-                        .HasForeignKey("ClassId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .HasForeignKey("ClassId");
 
                     b.Navigation("Class");
                 });
 
             modelBuilder.Entity("ELearningWeb.Models.QuizAttempt", b =>
                 {
+                    b.HasOne("ELearningWeb.Models.ApplicationUser", null)
+                        .WithMany("QuizAttempts")
+                        .HasForeignKey("ApplicationUserId");
+
                     b.HasOne("ELearningWeb.Models.Class", null)
                         .WithMany("QuizAttempts")
                         .HasForeignKey("ClassId");
 
                     b.HasOne("ELearningWeb.Models.Quiz", "Quiz")
-                        .WithMany("QuizAttempts")
+                        .WithMany()
                         .HasForeignKey("QuizId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("ELearningWeb.Models.ApplicationUser", "Student")
+                    b.HasOne("ELearningWeb.Models.Quiz", null)
                         .WithMany("QuizAttempts")
+                        .HasForeignKey("QuizId1");
+
+                    b.HasOne("ELearningWeb.Models.ApplicationUser", "Student")
+                        .WithMany()
                         .HasForeignKey("StudentId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();

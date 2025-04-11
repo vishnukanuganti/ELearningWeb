@@ -4,6 +4,7 @@ using ELearningWeb.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace ELearningWeb.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250410080106_courseupdate")]
+    partial class courseupdate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,82 +24,6 @@ namespace ELearningWeb.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("Course", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Overview")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("Prerequisites")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("Subject")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Syllabus")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Courses");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Name = "Introduction to C#",
-                            Overview = "Learn C# basics",
-                            Prerequisites = "None",
-                            Subject = "Programming",
-                            Syllabus = "Variables, Loops, OOP"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Name = "Web Development with ASP.NET",
-                            Overview = "Build web apps",
-                            Prerequisites = "C# basics",
-                            Subject = "Web Development",
-                            Syllabus = "MVC, Razor, EF Core"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Name = "Data Structures",
-                            Overview = "Core CS concepts",
-                            Prerequisites = "Programming basics",
-                            Subject = "Computer Science",
-                            Syllabus = "Arrays, Linked Lists, Trees"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Name = "SQL Fundamentals",
-                            Overview = "Database basics",
-                            Prerequisites = "None",
-                            Subject = "Database",
-                            Syllabus = "Queries, Joins, Indexes"
-                        });
-                });
 
             modelBuilder.Entity("ELearningWeb.Models.ApplicationUser", b =>
                 {
@@ -224,6 +151,89 @@ namespace ELearningWeb.Migrations
                     b.HasIndex("StudentId");
 
                     b.ToTable("ClassStudents");
+                });
+
+            modelBuilder.Entity("ELearningWeb.Models.Course", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<double>("AverageRating")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Overview")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Prerequisites")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Syllabus")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Courses");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            AverageRating = 0.0,
+                            Name = "Introduction to C#",
+                            Overview = "Learn C# basics",
+                            Prerequisites = "None",
+                            Subject = "Programming",
+                            Syllabus = "Variables, Loops, OOP"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            AverageRating = 0.0,
+                            Name = "Web Development with ASP.NET",
+                            Overview = "Build web apps",
+                            Prerequisites = "C# basics",
+                            Subject = "Web Development",
+                            Syllabus = "MVC, Razor, EF Core"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            AverageRating = 0.0,
+                            Name = "Data Structures",
+                            Overview = "Core CS concepts",
+                            Prerequisites = "Programming basics",
+                            Subject = "Computer Science",
+                            Syllabus = "Arrays, Linked Lists, Trees"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            AverageRating = 0.0,
+                            Name = "SQL Fundamentals",
+                            Overview = "Database basics",
+                            Prerequisites = "None",
+                            Subject = "Database",
+                            Syllabus = "Queries, Joins, Indexes"
+                        });
                 });
 
             modelBuilder.Entity("ELearningWeb.Models.DiscussionPost", b =>
@@ -410,8 +420,8 @@ namespace ELearningWeb.Migrations
                     b.Property<int>("CourseId")
                         .HasColumnType("int");
 
-                    b.Property<int>("Rating")
-                        .HasColumnType("int");
+                    b.Property<double>("Rating")
+                        .HasColumnType("float");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -585,7 +595,7 @@ namespace ELearningWeb.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Course", "Course")
+                    b.HasOne("ELearningWeb.Models.Course", "Course")
                         .WithMany("ClassCourses")
                         .HasForeignKey("CourseId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -622,7 +632,7 @@ namespace ELearningWeb.Migrations
                         .HasForeignKey("ClassId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("Course", null)
+                    b.HasOne("ELearningWeb.Models.Course", null)
                         .WithMany("DiscussionPosts")
                         .HasForeignKey("CourseId");
 
@@ -703,7 +713,7 @@ namespace ELearningWeb.Migrations
 
             modelBuilder.Entity("ELearningWeb.Models.Review", b =>
                 {
-                    b.HasOne("Course", "Course")
+                    b.HasOne("ELearningWeb.Models.Course", "Course")
                         .WithMany("Reviews")
                         .HasForeignKey("CourseId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -722,7 +732,7 @@ namespace ELearningWeb.Migrations
 
             modelBuilder.Entity("ELearningWeb.Models.StudentCourseProgress", b =>
                 {
-                    b.HasOne("Course", "Course")
+                    b.HasOne("ELearningWeb.Models.Course", "Course")
                         .WithMany("CourseProgress")
                         .HasForeignKey("CourseId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -790,17 +800,6 @@ namespace ELearningWeb.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Course", b =>
-                {
-                    b.Navigation("ClassCourses");
-
-                    b.Navigation("CourseProgress");
-
-                    b.Navigation("DiscussionPosts");
-
-                    b.Navigation("Reviews");
-                });
-
             modelBuilder.Entity("ELearningWeb.Models.ApplicationUser", b =>
                 {
                     b.Navigation("ClassStudents");
@@ -821,6 +820,17 @@ namespace ELearningWeb.Migrations
                     b.Navigation("QuizAttempts");
 
                     b.Navigation("Quizzes");
+                });
+
+            modelBuilder.Entity("ELearningWeb.Models.Course", b =>
+                {
+                    b.Navigation("ClassCourses");
+
+                    b.Navigation("CourseProgress");
+
+                    b.Navigation("DiscussionPosts");
+
+                    b.Navigation("Reviews");
                 });
 
             modelBuilder.Entity("ELearningWeb.Models.DiscussionPost", b =>

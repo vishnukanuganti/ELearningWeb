@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
+using Newtonsoft.Json;
+using System.Diagnostics;
 
 namespace ELearningWeb.Controllers
 {
@@ -122,112 +124,155 @@ namespace ELearningWeb.Controllers
         }
 
         [HttpGet]
-        public IActionResult CreateQuiz(int? classId)
+        public IActionResult CreateQuiz(int classId)
         {
-            var classes = _context.Classes.ToList();
-            if (!classes.Any())
+            if (!_context.Classes.Any(c => c.Id == classId))
             {
-                TempData["Error"] = "No classes available. Please create a class first.";
+                TempData["Error"] = "Class not found.";
                 return RedirectToAction(nameof(Index));
             }
 
-            ViewBag.Classes = new SelectList(
-                classes.Select(c => new { c.Id, c.Name }),
-                "Id",
-                "Name",
-                classId.HasValue && classes.Any(c => c.Id == classId.Value) ? classId : classes.First().Id
-            );
-
-            var quizViewModel = new QuizViewModel();
-            if (classId.HasValue && classes.Any(c => c.Id == classId.Value))
+            ViewBag.ClassId = classId;
+            var viewModel = new CreateQuizViewModel
             {
-                quizViewModel.ClassId = classId.Value;
-            }
-            else
+                ClassId = classId,
+                Questions = new List<CreateQuestionViewModel>
             {
-                quizViewModel.ClassId = classes.First().Id; // Default to the first class
+                new CreateQuestionViewModel(),
+                new CreateQuestionViewModel(),
+                new CreateQuestionViewModel(),
+                new CreateQuestionViewModel(),
+                new CreateQuestionViewModel()
             }
-
-            return View(quizViewModel);
+            };
+            return View(viewModel);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateQuiz(QuizViewModel quizViewModel)
+        public async Task<IActionResult> CreateQuiz(CreateQuizViewModel viewModel)
         {
-            System.Diagnostics.Debug.WriteLine($"CreateQuiz POST - ClassId: {quizViewModel.ClassId}, Title: {quizViewModel.Title}");
-
-            if (quizViewModel.ClassId <= 0 || !_context.Classes.Any(c => c.Id == quizViewModel.ClassId))
+            // Debug incoming model
+            Debug.WriteLine($"Received Title: {viewModel.Title}");
+            Debug.WriteLine($"Received ClassId: {viewModel.ClassId}");
+            Debug.WriteLine($"Received Questions Count: {viewModel.Questions?.Count ?? 0}");
+            foreach (var q in viewModel.Questions ?? new List<CreateQuestionViewModel>())
             {
-                ModelState.AddModelError("ClassId", $"The selected Class ID {quizViewModel.ClassId} is invalid. Available Class IDs are: {string.Join(", ", _context.Classes.Select(c => c.Id))}.");
+                Debug.WriteLine($"Question: Text={q.Text}, Type={q.Type}, Options={q.Options}, CorrectAnswer={q.CorrectAnswer}");
             }
 
+            // Validate ModelState
             if (!ModelState.IsValid)
             {
-                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
-                TempData["Error"] = "Failed to create quiz: " + string.Join(", ", errors);
-                System.Diagnostics.Debug.WriteLine("ModelState Errors: " + string.Join(", ", errors));
-                ViewBag.Classes = new SelectList(
-                    _context.Classes.Select(c => new { c.Id, c.Name }),
-                    "Id",
-                    "Name",
-                    quizViewModel.ClassId
-                );
-                return View(quizViewModel);
+                foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    Debug.WriteLine($"Validation Error: {error.ErrorMessage}");
+                }
+                ViewBag.ClassId = viewModel.ClassId;
+                return View(viewModel);
             }
 
-            var quiz = new Quiz
+            // Validate exactly 5 questions
+            if (viewModel.Questions == null || viewModel.Questions.Count != 5)
             {
-                ClassId = quizViewModel.ClassId,
-                Title = quizViewModel.Title
-            };
+                ModelState.AddModelError("", "Please provide exactly 5 questions.");
+                ViewBag.ClassId = viewModel.ClassId;
+                return View(viewModel);
+            }
+
+            // Validate each question
+            for (int i = 0; i < viewModel.Questions.Count; i++)
+            {
+                var question = viewModel.Questions[i];
+                if (string.IsNullOrEmpty(question.Text) || string.IsNullOrEmpty(question.Type) || string.IsNullOrEmpty(question.CorrectAnswer))
+                {
+                    ModelState.AddModelError($"Questions[{i}].Text", "All questions must have text, type, and correct answer.");
+                    ViewBag.ClassId = viewModel.ClassId;
+                    return View(viewModel);
+                }
+            }
+
+            var classExists = await _context.Classes.AnyAsync(c => c.Id == viewModel.ClassId);
+            if (!classExists)
+            {
+                TempData["Error"] = "Invalid class ID.";
+                return RedirectToAction(nameof(Index));
+            }
 
             try
             {
+                var quiz = new Quiz
+                {
+                    Title = viewModel.Title,
+                    ClassId = viewModel.ClassId
+                };
                 _context.Quizzes.Add(quiz);
-                await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync(); // Save quiz first to get Id
+
+                Debug.WriteLine($"Quiz saved with Id: {quiz.Id}");
+
+                foreach (var questionVm in viewModel.Questions)
+                {
+                    if (!string.IsNullOrEmpty(questionVm.Text))
+                    {
+                        var question = new Question
+                        {
+                            Text = questionVm.Text,
+                            Type = questionVm.Type,
+                            Options = questionVm.Options,
+                            CorrectAnswer = questionVm.CorrectAnswer,
+                            QuizId = quiz.Id
+                        };
+                        _context.Questions.Add(question);
+                        Debug.WriteLine($"Added Question: Text={question.Text}, QuizId={question.QuizId}");
+                    }
+                }
+                await _context.SaveChangesAsync(); // Save questions
+
                 TempData["Message"] = "Quiz created successfully!";
-                return RedirectToAction(nameof(ClassDetails), new { id = quiz.ClassId });
+                return RedirectToAction(nameof(ClassDetails), new { id = viewModel.ClassId });
             }
-            catch (Exception ex)
+            catch (DbUpdateException ex)
             {
-                TempData["Error"] = $"Error saving quiz: {ex.Message}";
-                ViewBag.Classes = new SelectList(
-                    _context.Classes.Select(c => new { c.Id, c.Name }),
-                    "Id",
-                    "Name",
-                    quizViewModel.ClassId
-                );
-                return View(quizViewModel);
+                Debug.WriteLine($"Database Error: {ex.InnerException?.Message}");
+                ModelState.AddModelError("", "An error occurred while saving the quiz. Please check the data and try again.");
+                ViewBag.ClassId = viewModel.ClassId;
+                return View(viewModel);
             }
         }
 
 
-        // GET: /Supervisor/ClassDetails/{id}
         [HttpGet]
         public IActionResult ClassDetails(int id)
         {
-            var classEntity = _context.Classes
-                .Include(c => c.ClassCourses).ThenInclude(cc => cc.Course)
-                .Include(c => c.ClassStudents).ThenInclude(cs => cs.Student)
-                .Include(c => c.Quizzes).ThenInclude(q => q.Attempts).ThenInclude(a => a.Student)
+            var classItem = _context.Classes
+                .Include(c => c.ClassCourses)
+                .ThenInclude(cc => cc.Course)
+                .Include(c => c.ClassStudents)
+                .ThenInclude(cs => cs.Student)
+                .Include(c => c.Quizzes)
+                .ThenInclude(q => q.Questions)
+                .Include(c => c.QuizAttempts)
+                .ThenInclude(qa => qa.Student)
                 .FirstOrDefault(c => c.Id == id);
 
-            if (classEntity == null)
+            if (classItem == null)
             {
-                return NotFound();
+                TempData["Error"] = "Class not found.";
+                return RedirectToAction(nameof(Index));
             }
-            return View(classEntity);
-        }
 
+            return View(classItem);
+        }
         // POST: /Supervisor/GradeAttempt
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> GradeAttempt(int attemptId, double grade)
+        [HttpGet]
+        public IActionResult GradeAttempt(int attemptId)
         {
-            var attempt = await _context.QuizAttempts
+            var attempt = _context.QuizAttempts
                 .Include(qa => qa.Quiz)
-                .FirstOrDefaultAsync(qa => qa.Id == attemptId);
+                    .ThenInclude(q => q.Questions)
+                .Include(qa => qa.Student)
+                .FirstOrDefault(qa => qa.Id == attemptId);
 
             if (attempt == null)
             {
@@ -235,19 +280,56 @@ namespace ELearningWeb.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            if (grade < 0 || grade > 100)
+            if (attempt.Grade.HasValue)
             {
-                TempData["Error"] = "Grade must be between 0 and 100.";
+                TempData["Error"] = "This attempt has already been graded.";
                 return RedirectToAction(nameof(ClassDetails), new { id = attempt.Quiz.ClassId });
             }
 
-            attempt.Grade = grade;
+            var answers = JsonConvert.DeserializeObject<Dictionary<int, string>>(attempt.Answers);
+            var gradeViewModel = new GradeAttemptViewModel
+            {
+                AttemptId = attempt.Id,
+                StudentName = attempt.Student.FullName,
+                QuizTitle = attempt.Quiz.Title,
+                Answers = attempt.Answers,
+                ClassId = attempt.Quiz.ClassId
+            };
+
+            foreach (var question in attempt.Quiz.Questions)
+            {
+                gradeViewModel.Correctness[question.Id] = answers.ContainsKey(question.Id) && answers[question.Id] == question.CorrectAnswer;
+            }
+
+            return View(gradeViewModel);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> GradeAttempt(GradeAttemptViewModel gradeViewModel)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(gradeViewModel);
+            }
+
+            var attempt = await _context.QuizAttempts
+                .Include(qa => qa.Quiz)
+                .FirstOrDefaultAsync(qa => qa.Id == gradeViewModel.AttemptId);
+
+            if (attempt == null)
+            {
+                TempData["Error"] = "Quiz attempt not found.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            attempt.Grade = gradeViewModel.Grade;
             await _context.SaveChangesAsync();
-            TempData["Message"] = "Grade updated successfully!";
+            TempData["Message"] = "Quiz attempt graded successfully!";
             return RedirectToAction(nameof(ClassDetails), new { id = attempt.Quiz.ClassId });
         }
+
     }
+
 }
-
-
 
